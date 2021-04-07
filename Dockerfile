@@ -1,7 +1,7 @@
 FROM maven:3.6.3-openjdk-14 AS build
 COPY src /src
 COPY pom.xml /
-RUN maven clean package -DskipTests
+RUN mvn clean package -DskipTests
 
 FROM openjdk:14
 VOLUME /tmp
