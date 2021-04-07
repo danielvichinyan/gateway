@@ -1,10 +1,12 @@
 package com.knowit.gateway.security.filters;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.knowit.gateway.services.JwtService;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import org.springframework.cloud.netflix.zuul.filters.support.FilterConstants;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,6 +47,18 @@ public class AuthenticationZuulFilter extends ZuulFilter {
 
     @Override
     public Object run() throws ZuulException {
+        RequestContext requestContext = RequestContext.getCurrentContext();
+        HttpServletRequest request = requestContext.getRequest();
+        String authHeader =  request.getHeader("Authorization");
+        String tokenFromHeader = this.extractTokenFromAuthorizationHeader(authHeader);
+        DecodedJWT decodedJWT = this.jwtService.validateToken(tokenFromHeader);
+        String userId = decodedJWT.getKeyId();
+
+        if (decodedJWT.equals(null)) {
+            throw new ZuulException("Invalid token!", HttpStatus.UNAUTHORIZED.value(), "Invalid token signature!");
+        }
+        this.addHeaders(requestContext, userId);
+
         return null;
     }
 
