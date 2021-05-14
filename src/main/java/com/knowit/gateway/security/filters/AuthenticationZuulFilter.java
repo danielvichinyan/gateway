@@ -15,9 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 public class AuthenticationZuulFilter extends ZuulFilter {
 
     private static final String X_USER_ID = "X-User-Id";
-
     private static final String X_USER_SCOPES = "X-User-Scopes";
-
     private String[] userRoles;
 
     private JwtService jwtService;
@@ -49,26 +47,27 @@ public class AuthenticationZuulFilter extends ZuulFilter {
     public Object run() throws ZuulException {
         RequestContext requestContext = RequestContext.getCurrentContext();
         HttpServletRequest request = requestContext.getRequest();
-        String authHeader =  request.getHeader("Authorization");
-        String tokenFromHeader = this.extractTokenFromAuthorizationHeader(authHeader);
-        DecodedJWT decodedJWT = this.jwtService.validateToken(tokenFromHeader);
-        String userId = decodedJWT.getKeyId();
 
-        if (decodedJWT.equals(null)) {
-            throw new ZuulException("Invalid token!", HttpStatus.UNAUTHORIZED.value(), "Invalid token signature!");
+        String authorizationHeader = request.getHeader("Authorization");
+        String tokenFromHeader = this.getTokenFromAuthorizationHeader(authorizationHeader);
+        DecodedJWT decodedToken = this.jwtService.verifyToken(tokenFromHeader);
+        String userId = decodedToken.getKeyId();
+
+        if (decodedToken.equals(null)) {
+            throw new ZuulException("Invalid token", HttpStatus.UNAUTHORIZED.value(), "Token Signature is invalid.");
         }
-        this.addHeaders(requestContext, userId);
+
+        this.addClaimsToRequestAsHeaders(requestContext, userId);
 
         return null;
     }
 
-    public static String extractTokenFromAuthorizationHeader(String header) {
+    public static String getTokenFromAuthorizationHeader(String header) {
         String token = header.replace("Bearer ", "");
-
         return token.trim();
     }
 
-    private void addHeaders(RequestContext requestContext, String id) {
+    private void addClaimsToRequestAsHeaders(RequestContext requestContext, String id) {
         requestContext.addZuulRequestHeader(X_USER_ID, id);
         requestContext.addZuulRequestHeader(X_USER_SCOPES, String.valueOf(this.userRoles));
     }
