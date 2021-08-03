@@ -28,13 +28,11 @@ public class AuthenticationZuulFilter extends ZuulFilter {
 
     @Override
     public String filterType() {
-
         return FilterConstants.PRE_TYPE;
     }
 
     @Override
     public int filterOrder() {
-
         return FilterConstants.PRE_DECORATION_FILTER_ORDER;
     }
 
